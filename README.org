@@ -1,0 +1,114 @@
+* ox-blog
+
+It's just a simple blog system utilize org awesome export and publish system.
+
+it just works
+
+
+** Basic Configuration
+
+I use use-package
+
+#+BEGIN_SRC elisp
+(use-package ox-blog
+  :after (org ox-rss ox-html)
+  :bind (("C-c b" . publish-blog))
+  :config
+  (setq ox-blog-base-content-path "~/org/posts")
+  (setq ox-blog-ga "UA-38681562-1")
+  (setq ox-blog-disqus "reverlandhome")
+
+  (defun publish-blog ()
+    (interactive)
+    (org-publish-project "blog" nil nil))
+
+  (setq org-export-use-babel nil)
+  (setq org-confirm-babel-evaluate nil)
+
+  (setq org-publish-project-alist
+	`(("blog-content"
+	   :base-directory ,ox-blog-base-directory
+	   :exclude ".*~"
+	   :base-extension "org"
+
+	   :publishing-directory ,ox-blog-publishing-directory
+
+	   :recursive t
+	   ;;:preparation-function ox-blog-prepare
+	   :publishing-function ox-blog-publish-to-html
+
+	   :with-toc nil
+	   :with-title org-export-with-title
+	   :with-date org-export-with-date
+	   :section-numbers nil
+	   :html-doctype "html5"
+	   :html-html5-fancy t
+	   :html-head-include-default-style nil
+	   :html-head-include-scripts nil
+	   :html-headline-class "ui dividing header"
+	   :htmlized-source t
+	   :html-head-extra ,ox-blog-head
+	   :html-preamble ox-blog-preamble
+	   :html-postamble ox-blog-postamble
+
+	   :auto-sitemap t
+	   :sitemap-filename ,ox-blog-sitemap-filename
+	   :sitemap-title ,ox-blog-sitemap-title
+
+	   :sitemap-sort-files anti-chronologically
+	   :sitemap-format-entry ox-blog-sitemap-format-entry
+	   :sitemap-function ox-blog-sitemap-function
+	   )
+	  ("blog-static"
+	   :base-directory ,ox-blog-base-directory
+	   :base-extension "jpg\\|png\\|css\\|js\\|ico\\|gif\\|pdf\\|ogg"
+	   :recursive t
+	   :publishing-directory ,ox-blog-publishing-directory
+	   :publishing-function org-publish-attachment
+	   )
+	  ("blog-rss"
+	   :base-directory ,ox-blog-base-directory
+	   ;; :base-extension "org"
+
+	   :html-link-home ,ox-blog-link-home
+	   :html-link-use-abs-url t
+
+	   :rss-extension "xml"
+
+	   :publishing-directory ,ox-blog-publishing-directory
+	   :publishing-function (org-rss-publish-to-rss)
+
+	   :exclude ".*"
+	   :include (,ox-blog-sitemap-filename)
+	   :section-numbers nil
+	   :with-toc nil
+	   :title ,ox-blog-website-title
+     )
+	  ("blog"
+	   :components
+	   ("blog-content" "blog-static" "blog-rss"))))
+  )
+#+END_SRC
+
+** Capture Template
+
+Moreover, you can use a capture template to help you start a blog easily
+
+#+BEGIN_SRC elisp
+  (setq org-capture-templates
+	'(
+	  ("b" "New Post" plain (file ox-blog-create-posts-file)
+	   (file "templates/blog-post.tpl"))))
+#+END_SRC
+
+#+FILENAME: templates/blog-post.tpl
+#+BEGIN_SRC text
+#+TITLE: %^{标题}
+#+DATE: %^t
+#+SUBTITLE: %^{副标题}
+#+CATEGORY: %^{分类}
+#+FILETAGS: %^G
+
+%?
+
+#+END_SRC
