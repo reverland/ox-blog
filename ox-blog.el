@@ -175,7 +175,7 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', %a);
+      gtag('config', '%a');
       </script>
 "
       (format-spec-make ?a ox-blog-ga)
