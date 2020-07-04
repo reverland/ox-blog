@@ -1,11 +1,41 @@
-;;; ~/.doom.d/ox-blog.el -*- lexical-binding: t; -*-
+;;; ox-blog.el ---   -*- lexical-binding: t; -*-
+;; Copyright (C) 2020-  Reverland
+
+;; Author: Reverland <sa@linuxer.me>
+;;
+;; URL: http://github.com/reverland/ox-blog
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "26.3") (org "0.9"))
+;; Keywords: blog, org
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;
+;;; Commentary:
+;;
+;; A library to use org mode export/publish to generate blog
+;;
 ;; Copy And Modified From https://vicarie.in/posts/blogging-with-org.html
+;; More info in the project site https://github.com/reverland/ox-blog
+;;
+;;; Code:
 
 (require 'org)
 (require 'ox-publish)
 (require 'ox-html)
-(require 'org-element)
 (require 'ox-rss)
+(require 'org-element)
+(require 's)
 
 ;; customization
 
@@ -121,8 +151,8 @@
 ;; functions
 (defun ox-blog-prepare (project-plist)
   "With help from `https://github.com/howardabrams/dot-files'.
-  Touch `index.org' to rebuilt it.
-  Argument `PROJECT-PLIST' contains information about the current project."
+Touch `index.org' to rebuilt it.
+Argument `PROJECT-PLIST' contains information about the current project."
   (let* ((base-directory (plist-get project-plist :base-directory))
          (buffer (find-file-noselect (expand-file-name "index.org" base-directory) t)))
     (with-current-buffer buffer
@@ -131,7 +161,7 @@
     (kill-buffer buffer)))
 
 (defun ox-blog-preamble (plist)
-  "Pre-amble for whole blog."
+  "Pre-amble for whole blog with PLIST."
   (when (s-starts-with-p "20" (file-name-nondirectory (plist-get plist :input-file)))
     (plist-put plist
                :publish-date (format "Published on %s"
@@ -152,7 +182,7 @@
   </div>")
 
 (defun ox-blog-postamble (plist)
-  "Post-amble for whole blog."
+  "Post-amble for whole blog with PLIST."
   (concat
    ox-blog-footer
    ox-blog-js
@@ -271,7 +301,11 @@
           "\n#+end_archive\n"))
 
 (defun ox-blog-publish-to-html (plist filename pub-dir)
-  "Same as `org-html-publish-to-html' but modifies html before finishing."
+  "Same as `org-html-publish-to-html' but modifies html before finishing.
+
+FILENAME is the filename of the Org file to be published.  PLIST
+is the property list for the given project.  PUB-DIR is the
+publishing directory."
   (let ((file-path (org-publish-org-to 'ox-blog filename ".html" plist pub-dir)))
     (with-current-buffer (find-file-noselect file-path)
       (goto-char (point-min))
@@ -394,10 +428,87 @@ holding export options."
   :translate-alist '((template . ox-blog-html-template))
   )
 
-(defun ox-blog-create-posts-file ()
+
+(defun ox-blog-get-post-file ()
   "Create an org file in ~/org/posts/."
   (interactive)
   (let ((name (read-string "Filename: ")))
     (expand-file-name (format "%s.org"
                               name) ox-blog-base-directory)))
+
+;;;###autoload
+(defun ox-publish-blog (force)
+  "Publish blog whth or without FORCE.
+By default, org page only publish that has changed. When prefix means force publish all"
+  (interactive "P")
+  (org-publish-project "blog" force nil))
+
+;; reasonable default setq
+(setq org-export-use-babel nil)
+(setq org-confirm-babel-evaluate nil)
+(setq org-publish-project-alist
+      `(("blog-content"
+         :base-directory ,ox-blog-base-directory
+         :exclude ".*~"
+         :base-extension "org"
+
+         :publishing-directory ,ox-blog-publishing-directory
+
+         :recursive t
+         ;;:preparation-function ox-blog-prepare
+         :publishing-function ox-blog-publish-to-html
+
+         :with-toc nil
+         :with-title org-export-with-title
+         :with-date org-export-with-date
+         :section-numbers nil
+         :html-doctype "html5"
+         :html-html5-fancy t
+         :html-head-include-default-style nil
+         :html-head-include-scripts nil
+         :html-headline-class "ui dividing header"
+         :htmlized-source t
+         :html-head-extra ,ox-blog-head
+         :html-preamble ox-blog-preamble
+         :html-postamble ox-blog-postamble
+
+         :auto-sitemap t
+         :sitemap-filename ,ox-blog-sitemap-filename
+         :sitemap-title ,ox-blog-sitemap-title
+
+         :sitemap-sort-files anti-chronologically
+         :sitemap-format-entry ox-blog-sitemap-format-entry
+         :sitemap-function ox-blog-sitemap-function
+         )
+        ("blog-static"
+         :base-directory ,ox-blog-base-directory
+         :base-extension "jpg\\|png\\|css\\|js\\|ico\\|gif\\|pdf\\|ogg"
+         :recursive t
+         :publishing-directory ,ox-blog-publishing-directory
+         :publishing-function org-publish-attachment
+         )
+        ("blog-rss"
+         :base-directory ,ox-blog-base-directory
+         ;; :base-extension "org"
+
+         :html-link-home ,ox-blog-link-home
+         :html-link-use-abs-url t
+
+         :rss-extension "xml"
+
+         :publishing-directory ,ox-blog-publishing-directory
+         :publishing-function (org-rss-publish-to-rss)
+
+         :exclude ".*"
+         :include (,ox-blog-sitemap-filename)
+         :section-numbers nil
+         :with-toc nil
+	       :title ,ox-blog-website-title
+         )
+	      ("blog"
+	       :components
+	       ("blog-content" "blog-static" "blog-rss"))))
+
 (provide 'ox-blog)
+
+;;; ox-blog.el ends here
