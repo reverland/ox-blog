@@ -429,12 +429,33 @@ holding export options."
   )
 
 
+;;;###autoload
 (defun ox-blog-get-post-file ()
   "Create an org file in ~/org/posts/."
   (interactive)
-  (let ((name (read-string "Filename: ")))
-    (expand-file-name (format "%s.org"
-                              name) ox-blog-base-directory)))
+  (let ((title (read-string "Title: ")))
+    (kill-new title)
+    (expand-file-name (format "%s-%s.org"
+                              (format-time-string "%Y-%m-%d")
+                              (ox-blog-slugify title)) ox-blog-base-directory)))
+
+;;;###autoload
+(defun ox-blog-slugify (title)
+  "Slugify TITLE into url friendly format.
+
+For exmaple, `A Good Title Here!is my idea' get `a-good-title-here-is-my-idea'
+https://gist.github.com/hagemann/382adfc57adbd5af078dc93feef01fe1
+"
+  (setq slug title)
+  (setq slug (downcase slug))
+  (setq slug (replace-regexp-in-string "\s+" "-" slug)) ; replace spaces with -
+  (setq slug (replace-regexp-in-string "[^[:ascii:]]" "" slug)) ; replace non ascii characters
+  (setq slug (replace-regexp-in-string "&" "-and-" slug)) ; replace &
+  (setq slug (replace-regexp-in-string "--+" "-" slug)) ; replace multiple - with a single -
+  (setq slug (replace-regexp-in-string "^-+" "" slug)) ; trim - from start of text
+  (setq slug (replace-regexp-in-string "-+$" "" slug)) ; trim - from end of text
+  slug
+  )
 
 ;;;###autoload
 (defun ox-publish-blog (force)
