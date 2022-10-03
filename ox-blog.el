@@ -503,7 +503,7 @@ By default, org page only publish that has changed. When prefix means force publ
          )
         ("blog-static"
          :base-directory ,ox-blog-base-directory
-         :base-extension "jpg\\|png\\|css\\|js\\|ico\\|gif\\|pdf\\|ogg"
+         :base-extension "jpeg\\|jpg\\|png\\|css\\|js\\|ico\\|gif\\|pdf\\|ogg"
          :recursive t
          :publishing-directory ,ox-blog-publishing-directory
          :publishing-function org-publish-attachment
